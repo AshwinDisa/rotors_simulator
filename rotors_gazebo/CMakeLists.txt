@@ -44,7 +44,7 @@ if(NO_ROS)
   return()
 endif()
 
-find_package(catkin REQUIRED COMPONENTS gazebo_msgs geometry_msgs mav_msgs roscpp sensor_msgs)
+find_package(catkin REQUIRED COMPONENTS gazebo_msgs geometry_msgs mav_msgs roscpp sensor_msgs rospy std_msgs)
 
 catkin_package(
   CATKIN_DEPENDS
@@ -53,6 +53,8 @@ catkin_package(
     mav_msgs
     roscpp
     sensor_msgs
+    rospy
+    std_msgs
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})
