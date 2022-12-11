@@ -19,6 +19,7 @@ class circular_trajectory():
         self.samplingTime = samplingTime
         self.Tf = Tf
         self.time = 0
+        self.scale = 5
 
         self.desired_x = 0.0
         self.desired_y = 0.0
@@ -36,10 +37,18 @@ class circular_trajectory():
     
     def sample(self):
 
-        t = 10*self.time % self.Tf
+        
 
-        self.desired_x = self.xc + self.radius*math.cos(2*math.pi*t/self.Tf)
-        self.desired_y = self.yc + self.radius*math.sin(2*math.pi*t/self.Tf)
+        # figure of 8
+        t = self.scale * self.time
+        self.desired_x = self.scale*math.cos(t)
+        self.desired_y = self.scale*math.sin(2*t)/2
+
+        # circle
+        # t = 10*self.time % self.Tf
+        # self.desired_x = self.xc + self.radius*math.cos(2*math.pi*t/self.Tf)
+        # self.desired_y = self.yc + self.radius*math.sin(2*math.pi*t/self.Tf)
+        
         self.desired_z = 3.0
 
         self.time += self.samplingTime
