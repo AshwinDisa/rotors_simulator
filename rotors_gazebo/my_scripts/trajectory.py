@@ -31,9 +31,12 @@ class circular_trajectory():
 
     def control(self, circle_traj):
 
-        while True:
+        rate = rospy.Rate(100)
 
-            circle_traj.sample()    
+        while not rospy.is_shutdown():
+
+            circle_traj.sample()
+            rate.sleep()    
     
     def sample(self):
 
@@ -79,8 +82,7 @@ if __name__ == '__main__':
         circle_traj = circular_trajectory([0,0], 3, timegap, samplingTime, Tf)
 
         circle_traj.control(circle_traj)
-
-        rate = rospy.Rate(10)
+        
         rospy.spin()
     
     except rospy.ROSInterruptException:

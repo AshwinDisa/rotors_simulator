@@ -44,13 +44,16 @@ class follower():
 
     def control(self):
 
-        while True:
+        rate = rospy.Rate(100)
+
+        while not rospy.is_shutdown():
 
             self.displacement = math.sqrt(pow((self.desired_x - self.current_x),2) + pow((self.desired_y - self.current_y),2)
                                                                                  + pow((self.desired_z - self.current_z),2))
-            print(self.displacement)
+            print("distance = ", self.displacement)
 
             self.publish()
+            rate.sleep() 
 
     def publish(self):
 
