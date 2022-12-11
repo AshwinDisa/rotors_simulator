@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rospy
+import math
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Pose
 
@@ -10,10 +11,19 @@ class follower():
         self.desired_x = 0.0
         self.desired_y = 0.0
         self.desired_z = 0.0
+
+        self.current_x = 0.0
+        self.current_y = 0.0
+        self.current_z = 0.0
+
+        self.displacement = 0.0
         
         # subscriber
         rospy.Subscriber('/firefly1/ground_truth/pose', 
                             Pose, self.state_callback)
+
+        rospy.Subscriber('/firefly2/ground_truth/pose', 
+                            Pose, self.state_callback_self)
 
         # publisher
         self.publisher = rospy.Publisher('/firefly2/command/pose',
@@ -26,12 +36,21 @@ class follower():
         self.desired_y = data.position.y
         self.desired_z = data.position.z
 
+    def state_callback_self(self, data_self):
+
+        self.current_x = data_self.position.x
+        self.current_y = data_self.position.y
+        self.current_z = data_self.position.z
 
     def control(self):
 
         while True:
 
-            follower.publish(self)
+            self.displacement = math.sqrt(pow((self.desired_x - self.current_x),2) + pow((self.desired_y - self.current_y),2)
+                                                                                 + pow((self.desired_z - self.current_z),2))
+            print(self.displacement)
+
+            self.publish()
 
     def publish(self):
 
