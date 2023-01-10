@@ -1,0 +1,6 @@
+<launch>
+  
+  <node pkg="rotors_gazebo" name="drone" type="drone_v2.py" output="screen"/>
+  <node name="anti_drone" pkg="rotors_gazebo" type="anti_drone.py" output="screen"/>
+
+</launch>
