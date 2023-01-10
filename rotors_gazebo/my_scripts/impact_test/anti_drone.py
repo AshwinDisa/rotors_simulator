@@ -47,6 +47,7 @@ class controller():
             else:
 
                 print("Hover completed")
+                rospy.sleep(3)
                 trajectory_mode.control()
         
     def state_callback(self, data):
@@ -91,14 +92,16 @@ class trajectory():
         self.drone_current_vel_y = 0.0
         self.drone_current_vel_z = 0.0
 
-        self.time_to_impact = 2.0
+        self.time_to_impact = 2
 
         self.time_current = 0.0
         self.time_prev = 0.0
 
-        self.desired_z = 2.0
+        self.desired_z = 6.0
 
-        self.max_speed = 4.0
+        self.looping_time = 0.01            # 100Hz 
+
+        self.displacement = 0.0
 
         self.x_i_new = hover_position[0]
         self.y_i_new = hover_position[1]
@@ -126,10 +129,18 @@ class trajectory():
 
             phi = math.atan(y_j/x_j)
 
+            self.displacement = math.sqrt(pow((self.anti_drone_current_x - self.drone_current_x),2) + 
+                                        pow((self.anti_drone_current_y - self.drone_current_y),2)
+                                        + pow((self.anti_drone_current_z - self.drone_current_z),2))
+
+            if (self.displacement < 2.0):
+
+                self.time_to_impact = 1 
+
             v_i_cos_theta = (x_j - x_i + v_j * math.cos(phi) * self.time_to_impact) / self.time_to_impact
             v_i_sin_theta = (y_j - y_i + v_j * math.sin(phi) * self.time_to_impact) / self.time_to_impact
 
-            # print(self.time_to_impact) 
+            # print(self.displacement, self.time_to_impact) 
 
             theta = math.atan(v_i_sin_theta / v_i_cos_theta)
 
@@ -138,23 +149,11 @@ class trajectory():
             # print(theta*180/math.pi, v_i)
             # print(v_j)
 
-            self.time_current = rospy.get_time()
+            self.v_i_x = v_i * math.cos(theta)
+            self.v_i_y = v_i * math.sin(theta)
 
-            if (v_i < self.max_speed):
-
-                self.v_i_x = v_i * math.cos(theta)
-                self.v_i_y = v_i * math.sin(theta)
-
-            else:
-
-                self.v_i_x = self.max_speed * math.cos(theta)
-                self.v_i_y = self.max_speed * math.sin(theta)
-
-            # x_i_new = v_i_x / (self.time_current - self.time_prev)
-            # y_i_new = v_i_y / (self.time_current - self.time_prev)
-
-            self.x_i_new = self.x_i_new + self.v_i_x * 0.01  
-            self.y_i_new = self.y_i_new + self.v_i_y * 0.01
+            self.x_i_new = self.x_i_new + self.v_i_x * self.looping_time  
+            self.y_i_new = self.y_i_new + self.v_i_y * self.looping_time
             
             # print(v_i, x_i_new, y_i_new)
             # print("time ", self.time_current - self.time_prev)
@@ -162,8 +161,6 @@ class trajectory():
 
 
             self.publisher(self.x_i_new, self.y_i_new)
-
-            self.time_prev = self.time_current
 
             rate.sleep()
 
@@ -175,7 +172,7 @@ class trajectory():
 
         transform_msg.translation.x = x_i_new
         transform_msg.translation.y = y_i_new
-        transform_msg.translation.z = self.desired_z
+        transform_msg.translation.z = self.drone_current_z
         
         vel_msg = Twist()
         
@@ -210,7 +207,7 @@ if __name__ == '__main__':
 
         rospy.init_node('anti_drone_node')
 
-        hover_position = [3, -5, 3]
+        hover_position = [5, -3, 9]
 
         hover_mode = hover(hover_position)
         trajectory_mode = trajectory(hover_position)
