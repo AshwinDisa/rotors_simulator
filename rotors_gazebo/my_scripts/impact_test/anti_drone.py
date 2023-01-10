@@ -77,7 +77,7 @@ class hover():
 
 class trajectory():
 
-    def __init__(self):
+    def __init__(self, hover_position):
 
         self.drone_current_x = 0.0
         self.drone_current_y = 0.0
@@ -91,11 +91,21 @@ class trajectory():
         self.drone_current_vel_y = 0.0
         self.drone_current_vel_z = 0.0
 
-        self.time_to_impact = 5.0
+        self.time_to_impact = 2.0
+
+        self.time_current = 0.0
+        self.time_prev = 0.0
+
+        self.desired_z = 2.0
+
+        self.max_speed = 4.0
+
+        self.x_i_new = hover_position[0]
+        self.y_i_new = hover_position[1]
         
         
-        self.anti_pose_publisher = rospy.Publisher('/firefly2/command/pose',
-                                        PoseStamped, queue_size = 10)
+        self.anti_pose_publisher = rospy.Publisher('/firefly2/command/trajectory', 
+                                        MultiDOFJointTrajectory, queue_size = 10)
 
         rospy.Subscriber('/firefly1/ground_truth/odometry', Odometry, self.drone_odom_callback)
         rospy.Subscriber('/firefly2/ground_truth/odometry', Odometry, self.anti_drone_odom_callback)
@@ -119,13 +129,64 @@ class trajectory():
             v_i_cos_theta = (x_j - x_i + v_j * math.cos(phi) * self.time_to_impact) / self.time_to_impact
             v_i_sin_theta = (y_j - y_i + v_j * math.sin(phi) * self.time_to_impact) / self.time_to_impact
 
+            # print(self.time_to_impact) 
+
             theta = math.atan(v_i_sin_theta / v_i_cos_theta)
 
             v_i = v_i_sin_theta / math.sin(theta)
 
-            print(theta*180/math.pi, v_i)
+            # print(theta*180/math.pi, v_i)
+            # print(v_j)
+
+            self.time_current = rospy.get_time()
+
+            if (v_i < self.max_speed):
+
+                self.v_i_x = v_i * math.cos(theta)
+                self.v_i_y = v_i * math.sin(theta)
+
+            else:
+
+                self.v_i_x = self.max_speed * math.cos(theta)
+                self.v_i_y = self.max_speed * math.sin(theta)
+
+            # x_i_new = v_i_x / (self.time_current - self.time_prev)
+            # y_i_new = v_i_y / (self.time_current - self.time_prev)
+
+            self.x_i_new = self.x_i_new + self.v_i_x * 0.01  
+            self.y_i_new = self.y_i_new + self.v_i_y * 0.01
+            
+            # print(v_i, x_i_new, y_i_new)
+            # print("time ", self.time_current - self.time_prev)
+            # print("x_i, y_i ", self.x_i_new, self.y_i_new)
+
+
+            self.publisher(self.x_i_new, self.y_i_new)
+
+            self.time_prev = self.time_current
 
             rate.sleep()
+
+    def publisher(self, x_i_new, y_i_new):
+
+        traj_msg = MultiDOFJointTrajectory(points=[], joint_names=None, header=None)
+        
+        transform_msg = Transform()
+
+        transform_msg.translation.x = x_i_new
+        transform_msg.translation.y = y_i_new
+        transform_msg.translation.z = self.desired_z
+        
+        vel_msg = Twist()
+        
+        acceleration_msg = Twist()
+          
+        traj_point = MultiDOFJointTrajectoryPoint(transforms = [transform_msg], velocities = [vel_msg], 
+                                        accelerations = [acceleration_msg], time_from_start = rospy.Time())
+
+        traj_msg.points.append(traj_point)
+
+        self.anti_pose_publisher.publish(traj_msg)
 
     def drone_odom_callback(self, drone_data):
 
@@ -149,10 +210,10 @@ if __name__ == '__main__':
 
         rospy.init_node('anti_drone_node')
 
-        hover_position = [0, 5, 3]
+        hover_position = [3, -5, 3]
 
         hover_mode = hover(hover_position)
-        trajectory_mode = trajectory()
+        trajectory_mode = trajectory(hover_position)
 
         drone_controller = controller(hover_position)
         drone_controller.control()

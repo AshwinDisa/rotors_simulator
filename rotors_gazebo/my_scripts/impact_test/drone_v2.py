@@ -137,10 +137,10 @@ if __name__ == '__main__':
 
         rospy.init_node('drone_node')
 
-        hover_position = [5, 0, 3]
+        hover_position = [0, 0, 3]
 
         traj_initial_pos = np.array(hover_position)
-        traj_final_pos = np. array([-5, 0, 3])
+        traj_final_pos = np. array([8, 8, 3])
 
         Xstart = np.zeros((4, 4))
         Xend = np.zeros((4, 4))
@@ -148,10 +148,10 @@ if __name__ == '__main__':
         Xstart[:3, 3] = traj_initial_pos
         Xend[:3, 3] = traj_final_pos
 
-        Tf = 15                             # time to reach from start to end position
-        samplingTime = 1/100                # sampling time in seconds
-        N = int(Tf/samplingTime)            # number of samples
-        method = 5                          # interpolation method
+        Tf = 13                                  # time to reach from start to end position
+        samplingTime = 1/100                    # sampling time in seconds
+        N = int(Tf/samplingTime)                # number of samples
+        method = 5                              # interpolation method
         trajectory = mr.CartesianTrajectory(
                 Xstart, Xend, Tf, N, method)    # get the trajectory
         timegap = Tf / (N - 1.0)
