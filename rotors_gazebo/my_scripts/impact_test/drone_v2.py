@@ -47,7 +47,8 @@ class controller():
 
                 while not rospy.is_shutdown():    
                     
-                    trajectory_mode.control()
+                    circular_trajectory_mode.control()
+                    # trajectory_mode.control()
                     rate.sleep()
 
         
@@ -130,14 +131,63 @@ class straight_trajectory():
 
         self.vel_publisher.publish(traj_msg)
 
+class circular_trajectory():
 
+    def __init__(self, centre, radius, time_of_rev, samplingTime):
+
+        self.time = 0.0
+        self.scale = 5.0
+        self.xc = centre[0]
+        self.yc = centre[1]
+        self.radius = radius
+        self.time_of_rev = time_of_rev
+        self.samplingTime = samplingTime 
+
+        self.vel_publisher = rospy.Publisher('/firefly1/command/trajectory', 
+                                        MultiDOFJointTrajectory, queue_size = 10)
+    
+    def control(self):
+
+        t = self.time/4
+
+        self.desired_x = self.xc + self.radius*math.cos(2*math.pi*t/self.time_of_rev)
+        self.desired_y = self.yc + self.radius*math.sin(2*math.pi*t/self.time_of_rev)
+        self.desired_z = 3.0
+
+        self.time += self.samplingTime
+
+        self.publisher(self.desired_x, self.desired_y, self.desired_z)
+
+    def publisher(self, desired_x, desired_y, desired_z):
+
+        traj_msg = MultiDOFJointTrajectory(points=[], joint_names=None, header=None)
+        
+        transform_msg = Transform()
+
+        transform_msg.translation.x = desired_x
+        transform_msg.translation.y = desired_y
+        transform_msg.translation.z = desired_z
+        
+        vel_msg = Twist()
+        
+        acceleration_msg = Twist()
+        
+        traj_point = MultiDOFJointTrajectoryPoint(transforms = [transform_msg], velocities = [vel_msg], 
+                                        accelerations = [acceleration_msg], time_from_start = rospy.Time())
+
+        traj_msg.points.append(traj_point)
+
+        self.vel_publisher.publish(traj_msg)
+
+            
+            
 if __name__ == '__main__':
 
     try:
 
         rospy.init_node('drone_node')
 
-        hover_position = [1, 1, 8]
+        hover_position = [0, 0, 5]
 
         traj_initial_pos = np.array(hover_position)
         traj_final_pos = np. array([20, 4, 6])
@@ -148,6 +198,7 @@ if __name__ == '__main__':
         Xstart[:3, 3] = traj_initial_pos
         Xend[:3, 3] = traj_final_pos
 
+        # straight line trajectory
         Tf = 12                                # time to reach from start to end position
         samplingTime = 1/100                    # sampling time in seconds
         N = int(Tf/samplingTime)                # number of samples
@@ -156,12 +207,20 @@ if __name__ == '__main__':
                 Xstart, Xend, Tf, N, method)    # get the trajectory
         timegap = Tf / (N - 1.0)
 
-        # print(len(trajectory))
+        # circular trajectory
+
+        centre = [0, 0]
+        radius = 8.0
+        time_of_rev = 10.0
+        samplingTime = 1/100
 
         hover_mode = hover(hover_position)
 
         trajectory_mode = straight_trajectory(
             trajectory, timegap, Xstart, Xend, samplingTime, Tf)
+
+        circular_trajectory_mode = circular_trajectory(centre, radius, 
+                                        time_of_rev, samplingTime)
 
         drone_controller = controller(hover_position)
         drone_controller.control()
