@@ -210,8 +210,8 @@ if __name__ == '__main__':
         # circular trajectory
 
         centre = [0, 0]
-        radius = 8.0
-        time_of_rev = 10.0
+        radius = 10.0
+        time_of_rev = 7.0
         samplingTime = 1/100
 
         hover_mode = hover(hover_position)

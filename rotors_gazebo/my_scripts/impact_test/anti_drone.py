@@ -47,7 +47,7 @@ class controller():
             else:
 
                 print("Hover completed")
-                rospy.sleep(3)
+                rospy.sleep(4)
                 trajectory_mode.control()
         
     def state_callback(self, data):
@@ -92,7 +92,7 @@ class trajectory():
         self.drone_current_vel_y = 0.0
         self.drone_current_vel_z = 0.0
 
-        self.time_to_impact = 2
+        self.time_to_impact = 0.7
 
         self.time_current = 0.0
         self.time_prev = 0.0
@@ -133,9 +133,16 @@ class trajectory():
                                         pow((self.anti_drone_current_y - self.drone_current_y),2)
                                         + pow((self.anti_drone_current_z - self.drone_current_z),2))
 
-            if (self.displacement < 2.0):
+            if (self.displacement < 2.5):
 
-                self.time_to_impact = 1 
+                self.time_to_impact = 0.3
+            
+            else:
+
+                self.time_to_impact = 0.7
+
+            # print(self.time_to_impact, self.displacement)
+ 
 
             v_i_cos_theta = (x_j - x_i + v_j * math.cos(phi) * self.time_to_impact) / self.time_to_impact
             v_i_sin_theta = (y_j - y_i + v_j * math.sin(phi) * self.time_to_impact) / self.time_to_impact
@@ -207,7 +214,7 @@ if __name__ == '__main__':
 
         rospy.init_node('anti_drone_node')
 
-        hover_position = [5, -3, 9]
+        hover_position = [0, 0, 1]
 
         hover_mode = hover(hover_position)
         trajectory_mode = trajectory(hover_position)
