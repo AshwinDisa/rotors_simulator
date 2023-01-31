@@ -31,7 +31,7 @@
       <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg mav_name).yaml" />
       <remap from="odometry" to="odometry_sensor1/odometry" />
     </node>
-    <!-- <node pkg="rotors_gazebo" name="drone" type="drone.py" output="screen"/> -->
+    <!-- <node pkg="rotors_gazebo" name="drone" type="drone_v2.py" output="screen"/> -->
   </group>
 
     <group ns="$(arg mav_name)2">
@@ -51,7 +51,7 @@
       <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg mav_name).yaml" />
       <remap from="odometry" to="odometry_sensor1/odometry" />
     </node>
-    <!-- <node name="follower" pkg="rotors_gazebo" type="follower.py" output="screen"/> -->
+    <!-- <node name="anti_drone" pkg="rotors_gazebo" type="anti_drone.py" output="screen"/> -->
     
     <!-- <node name="hovering_example" pkg="rotors_gazebo" type="hovering_example" output="screen"/>
     <node name="waypoint_publisher_file" pkg="rotors_gazebo" type="waypoint_publisher_file" output="screen" args="$(find rotors_gazebo)/resource/example_waypoints.txt"/>

@@ -64,7 +64,7 @@
       </plugin>
     </gazebo>
     <gazebo reference="base_link">
-      <material>Gazebo/${color}</material>
+      <material>Gazebo/DarkGray</material>
       <collision name='base_link_inertia_collision'>
         <surface>
           <contact>

@@ -11,6 +11,7 @@ import time
 import tf.transformations
 import math
 import modern_robotics as mr
+import cvxpy as cp
 
 class controller():
 
@@ -103,6 +104,10 @@ class trajectory():
 
         self.displacement = 0.0
 
+        self.x_prev = 0.0
+        self.y_prev = 0.0
+        self.z_prev = 0.0
+
         self.x_i_new = hover_position[0]
         self.y_i_new = hover_position[1]
         
@@ -119,58 +124,39 @@ class trajectory():
 
         while not rospy.is_shutdown():
 
-            x_j = self.drone_current_x
-            x_i = self.anti_drone_current_x
-            y_j = self.drone_current_y
-            y_i = self.anti_drone_current_y
-            v_j = math.sqrt(pow((self.drone_current_vel_x),2) + 
-                                            pow((self.drone_current_vel_y),2)
-                                            + pow((self.drone_current_vel_z),2))
+            x = cp.Variable()
+            y = cp.Variable()
+            z = cp.Variable()
 
-            phi = math.atan(y_j/x_j)
+            xx = (x - self.drone_current_x)**2
+            yy = (y - self.drone_current_y)**2
+            zz = (z - self.drone_current_z)**2
 
-            self.displacement = math.sqrt(pow((self.anti_drone_current_x - self.drone_current_x),2) + 
-                                        pow((self.anti_drone_current_y - self.drone_current_y),2)
-                                        + pow((self.anti_drone_current_z - self.drone_current_z),2))
+            # xx = (x - 12)**2
+            # yy = (y - 50)**2
+            # zz = (z - 5)**2
 
-            if (self.displacement < 2.5):
+            objective = cp.Minimize(xx + yy + zz)
 
-                self.time_to_impact = 0.3
+            constraints = [(x - self.x_prev)/0.01 <= 50, (y - self.y_prev)/0.01 <= 50, (z - self.z_prev)/0.01 <= 50]
+
+            problem = cp.Problem(objective, constraints)
+
+            problem.solve()
             
-            else:
+            self.x_prev = x.value
+            self.y_prev = y.value
+            self.z_prev = z.value
 
-                self.time_to_impact = 0.7
+            self.x_i_new = x.value
+            self.y_i_new = y.value
+            self.z_i_new = z.value
 
-            # print(self.time_to_impact, self.displacement)
-
-            v_i_cos_theta = (x_j - x_i + v_j * math.cos(phi) * self.time_to_impact) / self.time_to_impact
-            v_i_sin_theta = (y_j - y_i + v_j * math.sin(phi) * self.time_to_impact) / self.time_to_impact
-
-            # print(self.displacement, self.time_to_impact) 
-
-            theta = math.atan(v_i_sin_theta / v_i_cos_theta)
-
-            v_i = v_i_sin_theta / math.sin(theta)
-
-            # print(theta*180/math.pi, v_i)
-            # print(v_j)
-
-            self.v_i_x = v_i * math.cos(theta)
-            self.v_i_y = v_i * math.sin(theta)
-
-            self.x_i_new = self.x_i_new + self.v_i_x * self.looping_time  
-            self.y_i_new = self.y_i_new + self.v_i_y * self.looping_time
-            
-            # print(v_i, x_i_new, y_i_new)
-            # print("time ", self.time_current - self.time_prev)
-            # print("x_i, y_i ", self.x_i_new, self.y_i_new)
-
-
-            self.publisher(self.x_i_new, self.y_i_new)
+            self.publisher(self.x_i_new, self.y_i_new, self.z_i_new)
 
             rate.sleep()
 
-    def publisher(self, x_i_new, y_i_new):
+    def publisher(self, x_i_new, y_i_new, z_i_new):
 
         traj_msg = MultiDOFJointTrajectory(points=[], joint_names=None, header=None)
         
@@ -178,7 +164,7 @@ class trajectory():
 
         transform_msg.translation.x = x_i_new
         transform_msg.translation.y = y_i_new
-        transform_msg.translation.z = self.drone_current_z
+        transform_msg.translation.z = z_i_new
         
         vel_msg = Twist()
         
